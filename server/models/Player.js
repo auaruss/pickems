@@ -7,8 +7,8 @@ const PlayerSchema = new mongoose.Schema({
   email: {
     type: String,
   },
-  playerGroup: {
-    type: String,
+  groups: {
+    type: [String],
   },
 })
 
