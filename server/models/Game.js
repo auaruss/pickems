@@ -13,11 +13,7 @@ const GameSchema = new mongoose.Schema({
   weekId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Week',
-  },
-  seasonId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Season',
-  },
+  }
 })
 
 module.exports = mongoose.model('Game', GameSchema)

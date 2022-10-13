@@ -9,8 +9,11 @@ const {
   GraphQLEnumType,
 } = require("graphql")
 
-const Player = require('../models/Player')
 const Week = require('../models/Week')
+const Game = require('../models/Game')
+const Player = require('../models/Player')
+const Season = require('../models/Season')
+const Prediction = require('../models/Prediction')
 
 const PlayerType = new GraphQLObjectType({
   name: "Player",
@@ -30,8 +33,7 @@ const GameType = new GraphQLObjectType({
     home: { type: GraphQLString },
     away: { type: GraphQLString },
     winner: { type: GraphQLString },
-    weekId: { GraphQLID },
-    seasonId: { type: GraphQLID }
+    weekId: { type: GraphQLID },
   }),
 })
 
@@ -71,57 +73,197 @@ const RootQuery = new GraphQLObjectType({
     players: {
       type: new GraphQLList(PlayerType),
       resolve(parent, args) {
-        return Player.find();
+        return Player.find()
       },
     },
     player: {
       type: PlayerType,
       args: { id: { type: GraphQLID } },
       resolve(parent, args) {
-        return Player.findById(args.id);
+        return Player.findById(args.id)
       },
     },
     weeks: {
       type: new GraphQLList(WeekType),
       resolve(parent, args) {
-        return Week.find();
+        return Week.find()
       },
     },
     week: {
       type: WeekType,
       args: { id: { type: GraphQLID } },
       resolve(parent, args) {
-        return Week.findById(args.id);
+        return Week.findById(args.id)
       },
     },
   },
-});
+})
 
 
 const mutation = new GraphQLObjectType({
   name: 'Mutation',
   fields: {
-    addPlayer: {
+    createPlayer: {
       type: PlayerType,
       args: {
         name: { type: GraphQLNonNull(GraphQLString) },
         email: { type: GraphQLNonNull(GraphQLString) },
-        groups: { type: GraphQLList(GraphQLString) },
+        groups: { type: GraphQLList(GraphQLString) }
       },
       resolve(parent, args) {
         const player = new Player({
           name: args.name,
           email: args.email,
           groups: args.groups || [],
-        });
+        })
 
-        return player.save();
+        return player.save()
       },
+    },
+
+    createSeason: {
+      type: SeasonType,
+      args: {
+        playerIds: { type: GraphQLList(GraphQLID) },
+        weekIds: { type: GraphQLList(GraphQLID) }
+      },
+      resolve(parent, args) {
+        const season = new Season({
+          playerIds: args.playerIds || [],
+          weekIds: args.weekIds || []
+        })
+
+        return season.save()
+      }
+    },
+
+    createWeek: {
+      type: WeekType,
+      args: {
+        weekNumber: { type: GraphQLNonNull(GraphQLInt) },
+        seasonId: { type: GraphQLNonNull(GraphQLID) },
+        predictionIds: { type: GraphQLList(GraphQLID) },
+      },
+      resolve(parent, args) {
+        const week = new Week({
+          weekNumber: args.weekNumber,
+          seasonId: args.seasonId,
+          predictionIds: args.predictionIds || []
+        })
+
+        return week.save()
+      }
+    },
+
+    createGame: {
+      type: GameType,
+      args: {
+        home: { type: GraphQLNonNull(GraphQLString) },
+        away: { type: GraphQLNonNull(GraphQLString) },
+        winner: { type: GraphQLString },
+        weekId: { type: GraphQLNonNull(GraphQLID) },
+      },
+      resolve(parent, args) {
+        const game = new Game({
+          home: args.home,
+          away: args.away,
+          winner: args.winner || 'TBD',
+          weekId: args.weekId,
+        })
+
+        return game.save()
+      }
+    },
+
+    createPrediction: {
+      type: PredictionType,
+      args: {
+        playerId: { type: GraphQLNonNull(GraphQLID) },
+        gameId: { type: GraphQLNonNull(GraphQLID) },
+        predictedWinner: { type: GraphQLNonNull(GraphQLString) }
+      },
+      resolve(parent, args) {
+        const prediction = new Prediction({
+          playerId: args.playerId,
+          gameId: args.gameId,
+          predictedWinner: args.predictedWinner
+        })
+
+        return prediction.save()
+      }
+    },
+
+    addPlayerToSeason: {
+      type: SeasonType,
+      args: {
+        seasonId: { type: GraphQLID },
+        playerId: { type: GraphQLID }
+      },
+      resolve(parent, args) {
+        const season = Season.findByIdAndUpdate(
+          args.seasonId,
+          { $push: { playerIds: args.playerId } }
+        )
+
+        return season
+      }
+    },
+
+    addWeekToSeason: {
+      type: SeasonType,
+      args: {
+        seasonId: { type: GraphQLID },
+        weekId: { type: GraphQLID }
+      },
+      resolve(parent, args) {
+        const season = Season.findByIdAndUpdate(
+          args.seasonId,
+          { $push: { weekIds: args.weekId } }
+        )
+
+        return season
+      }
+    },
+
+    addPredictionToWeek: {
+      type: WeekType,
+      args: {
+        predictionId: { type: GraphQLNonNull(GraphQLID) },
+        weekId: { type: GraphQLNonNull(GraphQLID) }
+      },
+      resolve(parent, args) {
+        const week = Week.findByIdAndUpdate(
+          args.weekId,
+          { $push: { predictionIds: args.predictionId } }
+        )
+
+        return week
+      }
     }
+
+    // updateGameWinner: {
+      
+    // }
+
+    // updatePrediction: {
+
+    // },
+    
+    // updatePlayer: {
+
+    // },
+
+    // deletePrediction: {
+
+    // },
+
+    // deletePlayer: {
+
+    // }
   }
 })
 
 module.exports = new GraphQLSchema({
   query: RootQuery,
   mutation,
-});
+})
