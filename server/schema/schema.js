@@ -76,6 +76,7 @@ const RootQuery = new GraphQLObjectType({
         return Player.find()
       },
     },
+
     player: {
       type: PlayerType,
       args: { id: { type: GraphQLID } },
@@ -83,6 +84,7 @@ const RootQuery = new GraphQLObjectType({
         return Player.findById(args.id)
       },
     },
+
     weeks: {
       type: new GraphQLList(WeekType),
       resolve(parent, args) {
@@ -96,6 +98,22 @@ const RootQuery = new GraphQLObjectType({
         return Week.findById(args.id)
       },
     },
+
+    getWeekByNumber: {
+      type: WeekType,
+      args: { weekNumber: { type: GraphQLNonNull(GraphQLInt) } },
+      resolve(parent, args) {
+        return Week.findOne({ weekNumber: args.weekNumber })
+      }
+    },
+
+    getGamesByWeekId: {
+      type: GraphQLList(GameType),
+      args: { weekId: { type: GraphQLNonNull(GraphQLID) } },
+      resolve(parent, args) {
+        return Game.find({ weekId: args.weekId })
+      }
+    }
   },
 })
 
@@ -239,11 +257,18 @@ const mutation = new GraphQLObjectType({
 
         return week
       }
-    }
+    },
 
-    // updateGameWinner: {
-      
-    // }
+    updateGameWinner: {
+      type: GameType,
+      args: {
+        winner: { type: GraphQLString },
+        gameId: { type: GraphQLNonNull(GraphQLID) },
+      },
+      resolve(parent, args) {
+        return Game.findByIdAndUpdate(args.gameId, { winner: args.winner })
+      }
+    }
 
     // updatePrediction: {
 
